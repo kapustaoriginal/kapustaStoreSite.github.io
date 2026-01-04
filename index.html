@@ -94,7 +94,6 @@
     </nav>
 
     <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full">
-        
         <div class="mb-8 relative max-w-2xl mx-auto">
             <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
             <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Поиск приложений по названию или категории..." class="form-input pl-12 py-4 shadow-sm text-base">
@@ -127,6 +126,7 @@
         </div>
     </main>
 
+    <!-- Модальные окна остаются прежними -->
     <div id="loginModal" class="modal-backdrop hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-sm w-full shadow-2xl border border-slate-100 dark:border-slate-700">
             <div class="text-center mb-6">
@@ -181,8 +181,8 @@
         const ADMIN_HASH = "a33e8889dccb8e2d7d45e5b4e9e0150617d1d5e84850e8b27f5e195fe47fdbbb";
         const GIST_FILENAME = "secure_store_data.json";
         
-        // ВСТАВЬТЕ ВАШ GIST ID ТУТ, ЧТОБЫ ОН ЗАГРУЖАЛСЯ СРАЗУ
-        const DEFAULT_GIST_ID = "https://gist.github.com/kapustaoriginal/f59916cf895c93ba367f2f6d235ec99b"; // GistID
+        // Можете вставить сюда GistID
+        const DEFAULT_GIST_ID = "https://gist.github.com/kapustaoriginal/f59916cf895c93ba367f2f6d235ec99b"; 
 
         let isAdmin = false;
         let apps = [];
@@ -190,23 +190,26 @@
 
         // --- ИНИЦИАЛИЗАЦИЯ ---
         document.addEventListener('DOMContentLoaded', () => {
+            // Тема
             if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
             }
 
-            // Инициализация полей Gist
+            // Настройки GitHub
             const savedToken = localStorage.getItem('gh_token');
-            const savedGistId = localStorage.getItem('gh_gist_id') || DEFAULT_GIST_ID;
+            const rawGistId = localStorage.getItem('gh_gist_id') || DEFAULT_GIST_ID;
+            // Очищаем Gist ID от ссылок, если пользователь вставил URL целиком
+            const cleanGistId = rawGistId.split('/').pop();
             
             if(savedToken) document.getElementById('ghToken').value = savedToken;
-            document.getElementById('ghGistId').value = savedGistId;
+            document.getElementById('ghGistId').value = cleanGistId;
 
-            // Первая загрузка
-            loadAppsLocally();
+            // Загружаем закэшированные данные для мгновенного показа
+            loadCachedApps();
             
-            // Если есть Gist ID, пробуем обновить из облака сразу
-            if (savedGistId && savedGistId !== "ВАШ_GIST_ID_ЗДЕСЬ") {
-                refreshData();
+            // СРАЗУ идем в Gist за свежими данными (ОСНОВНОЙ ИСТОЧНИК)
+            if (cleanGistId) {
+                refreshData(true); // silent update
             }
 
             lucide.createIcons();
@@ -221,10 +224,6 @@
         function toggleModal(id) {
             const el = document.getElementById(id);
             el.classList.toggle('hidden');
-            if (!el.classList.contains('hidden')) {
-                const input = el.querySelector('input');
-                if(input) input.focus();
-            }
         }
 
         function showToast(msg, isError = false) {
@@ -233,15 +232,9 @@
             const icon = toast.querySelector('i');
             toastMsg.innerText = msg;
             
-            if(isError) {
-                icon.setAttribute('data-lucide', 'alert-circle');
-                icon.classList.add('text-red-400');
-                icon.classList.remove('text-green-400');
-            } else {
-                icon.setAttribute('data-lucide', 'check-circle');
-                icon.classList.add('text-green-400');
-                icon.classList.remove('text-red-400');
-            }
+            icon.setAttribute('data-lucide', isError ? 'alert-circle' : 'check-circle');
+            icon.className = isError ? 'text-red-400' : 'text-green-400';
+            
             lucide.createIcons();
             toast.classList.remove('translate-y-20', 'opacity-0');
             setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
@@ -257,92 +250,95 @@
             renderApps(filteredApps);
         }
 
-        // --- ДАННЫЕ ---
-        function loadAppsLocally() {
-            const encryptedData = localStorage.getItem('secure_apps_data');
-            if (encryptedData) {
+        // --- ДАННЫЕ (ГЛАВНАЯ ЛОГИКА) ---
+        
+        // Только для мгновенного рендера при открытии
+        function loadCachedApps() {
+            const cached = localStorage.getItem('secure_apps_cache');
+            if (cached) {
                 try {
-                    const bytes = CryptoJS.AES.decrypt(encryptedData, ENCRYPTION_KEY);
+                    const bytes = CryptoJS.AES.decrypt(cached, ENCRYPTION_KEY);
                     apps = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+                    renderApps();
                 } catch (e) { apps = []; }
             }
-            filteredApps = [...apps];
-            renderApps();
         }
 
-        function saveAppsLocally() {
-            const ciphertext = CryptoJS.AES.encrypt(JSON.stringify(apps), ENCRYPTION_KEY).toString();
-            localStorage.setItem('secure_apps_data', ciphertext);
-            handleSearch();
-        }
-
-        async function refreshData() {
-            const gistId = document.getElementById('ghGistId').value.trim();
+        // Синхронизация: Загрузка из Gist
+        async function refreshData(isSilent = false) {
+            const rawGistId = document.getElementById('ghGistId').value.trim();
+            const cleanGistId = rawGistId.split('/').pop();
             const icon = document.getElementById('refreshIcon');
             
-            if (!gistId || gistId === "ВАШ_GIST_ID_ЗДЕСЬ") {
-                showToast("Укажите Gist ID в настройках", true);
-                return;
-            }
+            if (!cleanGistId) return;
 
-            icon.classList.add('animate-spin');
+            if(!isSilent) icon.classList.add('animate-spin');
             
             try {
-                // Пытаемся загрузить публично (без токена) или с токеном если есть
                 const token = localStorage.getItem('gh_token');
                 const headers = token ? { "Authorization": `token ${token}` } : {};
                 
-                const res = await fetch(`https://api.github.com/gists/${gistId}`, { headers });
-                if (!res.ok) throw new Error("Gist не найден");
+                const res = await fetch(`https://api.github.com/gists/${cleanGistId}`, { headers });
+                if (!res.ok) throw new Error("Gist не доступен");
                 
                 const data = await res.json();
                 const file = data.files[GIST_FILENAME];
-                if (!file) throw new Error("Файл не найден");
+                if (!file) throw new Error("Файл данных отсутствует в Gist");
 
                 const bytes = CryptoJS.AES.decrypt(file.content, ENCRYPTION_KEY);
                 const decrypted = bytes.toString(CryptoJS.enc.Utf8);
                 
                 apps = JSON.parse(decrypted);
-                saveAppsLocally();
-                showToast("Список обновлен");
+                
+                // Обновляем кэш
+                const ciphertext = CryptoJS.AES.encrypt(JSON.stringify(apps), ENCRYPTION_KEY).toString();
+                localStorage.setItem('secure_apps_cache', ciphertext);
+                
+                renderApps();
+                if(!isSilent) showToast("Данные синхронизированы");
             } catch (err) {
-                showToast("Ошибка обновления", true);
-                console.error(err);
+                console.error("Sync error:", err);
+                if(!isSilent) showToast("Ошибка синхронизации", true);
             } finally {
-                icon.classList.remove('animate-spin');
+                if(!isSilent) icon.classList.remove('animate-spin');
             }
         }
 
+        // Синхронизация: Сохранение в Gist
         async function syncToCloud(action) {
+            if (action === 'load') {
+                await refreshData();
+                toggleModal('syncModal');
+                return;
+            }
+
             const token = document.getElementById('ghToken').value.trim();
-            const gistId = document.getElementById('ghGistId').value.trim();
+            const rawGistId = document.getElementById('ghGistId').value.trim();
+            const cleanGistId = rawGistId.split('/').pop();
 
             if (!token) return showToast("Нужен GitHub Token!", true);
+            
             localStorage.setItem('gh_token', token);
-            localStorage.setItem('gh_gist_id', gistId);
+            localStorage.setItem('gh_gist_id', cleanGistId);
 
             const headers = { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" };
 
             try {
-                if (action === 'save') {
-                    const content = CryptoJS.AES.encrypt(JSON.stringify(apps), ENCRYPTION_KEY).toString();
-                    const body = { files: { [GIST_FILENAME]: { content } } };
-                    
-                    const url = gistId && gistId !== "ВАШ_GIST_ID_ЗДЕСЬ" ? `https://api.github.com/gists/${gistId}` : "https://api.github.com/gists";
-                    const method = gistId && gistId !== "ВАШ_GIST_ID_ЗДЕСЬ" ? "PATCH" : "POST";
+                const content = CryptoJS.AES.encrypt(JSON.stringify(apps), ENCRYPTION_KEY).toString();
+                const body = { files: { [GIST_FILENAME]: { content } } };
+                
+                const url = cleanGistId ? `https://api.github.com/gists/${cleanGistId}` : "https://api.github.com/gists";
+                const method = cleanGistId ? "PATCH" : "POST";
 
-                    const res = await fetch(url, { method, headers, body: JSON.stringify(body) });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.message);
-                    
-                    if (method === "POST") {
-                        document.getElementById('ghGistId').value = data.id;
-                        localStorage.setItem('gh_gist_id', data.id);
-                    }
-                    showToast("Сохранено в облако!");
-                } else {
-                    await refreshData();
+                const res = await fetch(url, { method, headers, body: JSON.stringify(body) });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
+                
+                if (method === "POST") {
+                    document.getElementById('ghGistId').value = data.id;
+                    localStorage.setItem('gh_gist_id', data.id);
                 }
+                showToast("Сохранено в Gist!");
                 toggleModal('syncModal');
             } catch (err) {
                 showToast(err.message, true);
@@ -368,7 +364,7 @@
 
         function logout() { isAdmin = false; location.reload(); }
 
-        function addNewApp(e) {
+        async function addNewApp(e) {
             e.preventDefault();
             const title = document.getElementById('appTitle').value;
             let price = document.getElementById('appPrice').value;
@@ -386,15 +382,24 @@
             };
 
             apps.unshift(newApp);
-            saveAppsLocally();
+            renderApps();
             document.getElementById('addAppForm').reset();
-            showToast("Приложение добавлено!");
+            
+            // Если есть токен, сохраняем в облако сразу
+            if(localStorage.getItem('gh_token')) {
+                syncToCloud('save');
+            } else {
+                showToast("Добавлено локально. Не забудьте нажать SYNC", false);
+            }
         }
 
         function deleteApp(id) {
             if(!confirm("Удалить?")) return;
             apps = apps.filter(a => a.id !== id);
-            saveAppsLocally();
+            renderApps();
+            if(localStorage.getItem('gh_token')) {
+                syncToCloud('save');
+            }
         }
 
         function renderApps(dataToRender = apps) {
@@ -424,7 +429,7 @@
                         </button>
                     </div>
                 `;
-                grid.innerHTML += card;
+                grid.insertAdjacentHTML('beforeend', card);
             });
             lucide.createIcons();
         }
