@@ -24,12 +24,6 @@
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         .glass-panel { backdrop-filter: blur(12px); }
-        
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .dark ::-webkit-scrollbar-thumb { background: #475569; }
-
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
@@ -96,126 +90,87 @@
     <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full">
         <div class="mb-8 relative max-w-2xl mx-auto">
             <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
-            <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Поиск приложений по названию или категории..." class="form-input pl-12 py-4 shadow-sm text-base">
+            <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Поиск приложений..." class="form-input pl-12 py-4 shadow-sm text-base">
         </div>
 
         <div id="adminPanel" class="hidden mb-8 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 fade-in">
-            <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-slate-800 dark:text-white">
-                <i data-lucide="plus-circle" class="text-blue-600"></i> Добавить приложение
-            </h2>
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2">Добавить приложение</h2>
             <form id="addAppForm" onsubmit="addNewApp(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input type="text" id="appTitle" placeholder="Название" required class="form-input">
                 <input type="text" id="appCategory" placeholder="Категория" required class="form-input">
-                <input type="text" id="appPrice" placeholder="Цена (0 для Бесплатно)" required class="form-input">
+                <input type="text" id="appPrice" placeholder="Цена" required class="form-input">
                 <input type="text" id="appImage" placeholder="URL иконки" class="form-input">
                 <input type="url" id="appDownloadUrl" placeholder="Ссылка на скачивание" required class="form-input md:col-span-2">
                 <textarea id="appDesc" placeholder="Описание..." class="form-input md:col-span-2 h-24 resize-none"></textarea>
-                <button type="submit" class="md:col-span-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition shadow-lg shadow-blue-600/20">
-                    Опубликовать
-                </button>
+                <button type="submit" class="md:col-span-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition">Опубликовать</button>
             </form>
         </div>
 
         <div id="appsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
-        
         <div id="emptyState" class="hidden text-center py-20 fade-in">
-            <div class="bg-slate-100 dark:bg-slate-800 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i data-lucide="ghost" class="w-10 h-10 text-slate-400"></i>
-            </div>
-            <p class="text-slate-500 dark:text-slate-400 text-lg">Ничего не найдено.</p>
+            <i data-lucide="ghost" class="w-10 h-10 text-slate-400 mx-auto mb-4"></i>
+            <p class="text-slate-500">Ничего не найдено.</p>
         </div>
     </main>
 
-    <!-- Модальные окна остаются прежними -->
-    <div id="loginModal" class="modal-backdrop hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-sm w-full shadow-2xl border border-slate-100 dark:border-slate-700">
-            <div class="text-center mb-6">
-                <div class="bg-slate-100 dark:bg-slate-700 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i data-lucide="key" class="w-8 h-8 text-slate-600 dark:text-slate-300"></i>
-                </div>
-                <h3 class="text-xl font-bold dark:text-white">Вход</h3>
-            </div>
+    <div id="loginModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-sm w-full">
+            <h3 class="text-xl font-bold mb-6 text-center">Вход Admin</h3>
             <form onsubmit="adminLogin(event)">
                 <input type="password" id="adminPassword" placeholder="Пароль" class="form-input mb-4" autofocus>
-                <button type="submit" class="w-full bg-slate-900 dark:bg-white dark:text-slate-900 text-white font-bold py-3 rounded-xl hover:opacity-90 transition">Войти</button>
+                <button type="submit" class="w-full bg-slate-900 dark:bg-white dark:text-slate-900 text-white font-bold py-3 rounded-xl transition">Войти</button>
             </form>
-            <button onclick="toggleModal('loginModal')" class="w-full mt-4 text-slate-400 text-sm hover:text-slate-600">Отмена</button>
+            <button onclick="toggleModal('loginModal')" class="w-full mt-4 text-slate-400 text-sm">Отмена</button>
         </div>
     </div>
 
-    <div id="syncModal" class="modal-backdrop hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold flex items-center gap-2 dark:text-white">
-                    <i data-lucide="github" class="w-5 h-5"></i> GitHub Sync
-                </h3>
-                <button onclick="toggleModal('syncModal')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
+    <div id="syncModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-md w-full">
+            <h3 class="text-lg font-bold mb-4">GitHub Sync</h3>
             <div class="space-y-3">
-                <div>
-                    <label class="text-xs font-bold text-slate-500 uppercase">GitHub Token</label>
-                    <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx" class="form-input text-xs font-mono">
-                </div>
-                <div>
-                    <label class="text-xs font-bold text-slate-500 uppercase">Gist ID</label>
-                    <input type="text" id="ghGistId" placeholder="ID вашего Gist" class="form-input text-xs font-mono">
-                </div>
+                <input type="password" id="ghToken" placeholder="GitHub Token" class="form-input text-xs">
+                <input type="text" id="ghGistId" placeholder="Gist ID" class="form-input text-xs">
             </div>
             <div class="grid grid-cols-2 gap-3 mt-6">
-                <button onclick="syncToCloud('load')" class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold py-2 rounded-lg text-sm">Загрузить</button>
-                <button onclick="syncToCloud('save')" class="bg-blue-600 text-white font-bold py-2 rounded-lg text-sm">Сохранить</button>
+                <button onclick="syncToCloud('load')" class="bg-slate-100 dark:bg-slate-700 py-2 rounded-lg text-sm">Загрузить</button>
+                <button onclick="syncToCloud('save')" class="bg-blue-600 text-white py-2 rounded-lg text-sm">Сохранить</button>
             </div>
         </div>
     </div>
 
     <div id="toast" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 z-50 pointer-events-none">
         <div class="bg-slate-800 dark:bg-white text-white dark:text-slate-900 px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3">
-            <i data-lucide="check-circle" class="text-green-400 dark:text-green-600"></i>
+            <i id="toastIcon" data-lucide="check-circle"></i>
             <span id="toastMsg" class="font-medium text-sm"></span>
         </div>
     </div>
 
     <script>
-        // --- КОНФИГУРАЦИЯ ---
         const ENCRYPTION_KEY = "my-super-secret-store-key"; 
         const ADMIN_HASH = "a33e8889dccb8e2d7d45e5b4e9e0150617d1d5e84850e8b27f5e195fe47fdbbb";
         const GIST_FILENAME = "secure_store_data.json";
-        
-        // Можете вставить сюда GistID
         const DEFAULT_GIST_ID = "https://gist.github.com/kapustaoriginal/f59916cf895c93ba367f2f6d235ec99b"; 
 
         let isAdmin = false;
         let apps = [];
-        let filteredApps = [];
 
-        // --- ИНИЦИАЛИЗАЦИЯ ---
-        document.addEventListener('DOMContentLoaded', () => {
-            // Тема
+        document.addEventListener('DOMContentLoaded', async () => {
             if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
             }
 
-            // Настройки GitHub
             const savedToken = localStorage.getItem('gh_token');
             const rawGistId = localStorage.getItem('gh_gist_id') || DEFAULT_GIST_ID;
-            // Очищаем Gist ID от ссылок, если пользователь вставил URL целиком
             const cleanGistId = rawGistId.split('/').pop();
             
             if(savedToken) document.getElementById('ghToken').value = savedToken;
             document.getElementById('ghGistId').value = cleanGistId;
 
-            // Загружаем закэшированные данные для мгновенного показа
             loadCachedApps();
-            
-            // СРАЗУ идем в Gist за свежими данными (ОСНОВНОЙ ИСТОЧНИК)
-            if (cleanGistId) {
-                refreshData(true); // silent update
-            }
-
+            if (cleanGistId) await refreshData(true);
             lucide.createIcons();
         });
 
-        // --- UI ФУНКЦИИ ---
         function toggleTheme() {
             document.documentElement.classList.toggle('dark');
             localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
@@ -223,15 +178,16 @@
 
         function toggleModal(id) {
             const el = document.getElementById(id);
-            el.classList.toggle('hidden');
+            if(el) el.classList.toggle('hidden');
         }
 
         function showToast(msg, isError = false) {
             const toast = document.getElementById('toast');
             const toastMsg = document.getElementById('toastMsg');
-            const icon = toast.querySelector('i');
+            const icon = document.getElementById('toastIcon');
+            if(!toast || !toastMsg) return;
+
             toastMsg.innerText = msg;
-            
             icon.setAttribute('data-lucide', isError ? 'alert-circle' : 'check-circle');
             icon.className = isError ? 'text-red-400' : 'text-green-400';
             
@@ -240,196 +196,156 @@
             setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
         }
 
-        // --- ПОИСК ---
         function handleSearch() {
             const query = document.getElementById('searchInput').value.toLowerCase();
-            filteredApps = apps.filter(app => 
+            const filtered = apps.filter(app => 
                 app.title.toLowerCase().includes(query) || 
                 app.category.toLowerCase().includes(query)
             );
-            renderApps(filteredApps);
+            renderApps(filtered);
         }
 
-        // --- ДАННЫЕ (ГЛАВНАЯ ЛОГИКА) ---
-        
-        // Только для мгновенного рендера при открытии
         function loadCachedApps() {
             const cached = localStorage.getItem('secure_apps_cache');
-            if (cached) {
-                try {
-                    const bytes = CryptoJS.AES.decrypt(cached, ENCRYPTION_KEY);
-                    apps = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+            if (!cached) return;
+            try {
+                const bytes = CryptoJS.AES.decrypt(cached, ENCRYPTION_KEY);
+                const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+                if(decrypted) {
+                    apps = JSON.parse(decrypted);
                     renderApps();
-                } catch (e) { apps = []; }
-            }
+                }
+            } catch (e) { apps = []; }
         }
 
-        // Синхронизация: Загрузка из Gist
         async function refreshData(isSilent = false) {
             const rawGistId = document.getElementById('ghGistId').value.trim();
             const cleanGistId = rawGistId.split('/').pop();
             const icon = document.getElementById('refreshIcon');
             
             if (!cleanGistId) return;
-
-            if(!isSilent) icon.classList.add('animate-spin');
+            if(!isSilent && icon) icon.classList.add('animate-spin');
             
             try {
                 const token = localStorage.getItem('gh_token');
                 const headers = token ? { "Authorization": `token ${token}` } : {};
                 
                 const res = await fetch(`https://api.github.com/gists/${cleanGistId}`, { headers });
-                if (!res.ok) throw new Error("Gist не доступен");
+                if (!res.ok) throw new Error();
                 
                 const data = await res.json();
                 const file = data.files[GIST_FILENAME];
-                if (!file) throw new Error("Файл данных отсутствует в Gist");
-
-                const bytes = CryptoJS.AES.decrypt(file.content, ENCRYPTION_KEY);
-                const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+                if (!file || !file.content) {
+                    apps = [];
+                } else {
+                    const bytes = CryptoJS.AES.decrypt(file.content, ENCRYPTION_KEY);
+                    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+                    apps = decrypted ? JSON.parse(decrypted) : [];
+                }
                 
-                apps = JSON.parse(decrypted);
-                
-                // Обновляем кэш
                 const ciphertext = CryptoJS.AES.encrypt(JSON.stringify(apps), ENCRYPTION_KEY).toString();
                 localStorage.setItem('secure_apps_cache', ciphertext);
                 
                 renderApps();
-                if(!isSilent) showToast("Данные синхронизированы");
+                if(!isSilent) showToast("Данные обновлены");
             } catch (err) {
-                console.error("Sync error:", err);
                 if(!isSilent) showToast("Ошибка синхронизации", true);
             } finally {
-                if(!isSilent) icon.classList.remove('animate-spin');
+                if(!isSilent && icon) icon.classList.remove('animate-spin');
             }
         }
 
-        // Синхронизация: Сохранение в Gist
         async function syncToCloud(action) {
-            if (action === 'load') {
-                await refreshData();
-                toggleModal('syncModal');
-                return;
-            }
+            if (action === 'load') { await refreshData(); toggleModal('syncModal'); return; }
 
             const token = document.getElementById('ghToken').value.trim();
             const rawGistId = document.getElementById('ghGistId').value.trim();
             const cleanGistId = rawGistId.split('/').pop();
 
             if (!token) return showToast("Нужен GitHub Token!", true);
-            
             localStorage.setItem('gh_token', token);
             localStorage.setItem('gh_gist_id', cleanGistId);
-
-            const headers = { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" };
 
             try {
                 const content = CryptoJS.AES.encrypt(JSON.stringify(apps), ENCRYPTION_KEY).toString();
                 const body = { files: { [GIST_FILENAME]: { content } } };
-                
                 const url = cleanGistId ? `https://api.github.com/gists/${cleanGistId}` : "https://api.github.com/gists";
-                const method = cleanGistId ? "PATCH" : "POST";
-
-                const res = await fetch(url, { method, headers, body: JSON.stringify(body) });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message);
                 
-                if (method === "POST") {
+                const res = await fetch(url, { 
+                    method: cleanGistId ? "PATCH" : "POST", 
+                    headers: { "Authorization": `token ${token}` }, 
+                    body: JSON.stringify(body) 
+                });
+                
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                if (!cleanGistId) {
                     document.getElementById('ghGistId').value = data.id;
                     localStorage.setItem('gh_gist_id', data.id);
                 }
-                showToast("Сохранено в Gist!");
+                showToast("Сохранено!");
                 toggleModal('syncModal');
-            } catch (err) {
-                showToast(err.message, true);
-            }
+            } catch (err) { showToast("Ошибка сохранения", true); }
         }
 
-        // --- АДМИНКА ---
         function adminLogin(e) {
             e.preventDefault();
-            const inputPass = document.getElementById('adminPassword').value;
-            if (CryptoJS.SHA256(inputPass).toString() === ADMIN_HASH) {
+            const pass = document.getElementById('adminPassword').value;
+            if (CryptoJS.SHA256(pass).toString() === ADMIN_HASH) {
                 isAdmin = true;
                 toggleModal('loginModal');
                 document.getElementById('adminBtn').classList.add('hidden');
                 document.getElementById('adminBadge').classList.remove('hidden');
                 document.getElementById('adminPanel').classList.remove('hidden');
                 renderApps();
-                showToast("Режим администратора");
-            } else {
-                showToast("Неверный пароль!", true);
-            }
+                showToast("Admin Mode");
+            } else { showToast("Неверный пароль!", true); }
         }
 
         function logout() { isAdmin = false; location.reload(); }
 
-        async function addNewApp(e) {
+        function addNewApp(e) {
             e.preventDefault();
-            const title = document.getElementById('appTitle').value;
-            let price = document.getElementById('appPrice').value;
-            if (price.trim() === '0') price = "Бесплатно";
-            let img = document.getElementById('appImage').value || `https://ui-avatars.com/api/?name=${title}&background=random&size=200`;
-
             const newApp = { 
                 id: Date.now(), 
-                title, 
+                title: document.getElementById('appTitle').value, 
                 category: document.getElementById('appCategory').value, 
-                price, 
-                image: img, 
+                price: document.getElementById('appPrice').value === '0' ? "Бесплатно" : document.getElementById('appPrice').value, 
+                image: document.getElementById('appImage').value || `https://ui-avatars.com/api/?name=${document.getElementById('appTitle').value}`, 
                 desc: document.getElementById('appDesc').value, 
                 downloadUrl: document.getElementById('appDownloadUrl').value 
             };
-
             apps.unshift(newApp);
             renderApps();
             document.getElementById('addAppForm').reset();
-            
-            // Если есть токен, сохраняем в облако сразу
-            if(localStorage.getItem('gh_token')) {
-                syncToCloud('save');
-            } else {
-                showToast("Добавлено локально. Не забудьте нажать SYNC", false);
-            }
+            if(localStorage.getItem('gh_token')) syncToCloud('save');
         }
 
         function deleteApp(id) {
             if(!confirm("Удалить?")) return;
             apps = apps.filter(a => a.id !== id);
             renderApps();
-            if(localStorage.getItem('gh_token')) {
-                syncToCloud('save');
-            }
+            if(localStorage.getItem('gh_token')) syncToCloud('save');
         }
 
         function renderApps(dataToRender = apps) {
             const grid = document.getElementById('appsGrid');
             const empty = document.getElementById('emptyState');
+            if(!grid) return;
             grid.innerHTML = '';
-
-            if (dataToRender.length === 0) {
-                empty.classList.remove('hidden');
-                return;
-            }
+            if (dataToRender.length === 0) { empty.classList.remove('hidden'); return; }
             empty.classList.add('hidden');
-
             dataToRender.forEach(app => {
-                const card = `
-                    <div class="relative bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-slate-100 dark:border-slate-700 flex flex-col h-full group">
-                        ${isAdmin ? `<button onclick="deleteApp(${app.id})" class="absolute top-3 right-3 bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300 p-2 rounded-full z-10"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
-                        <div class="flex items-start justify-between mb-4">
-                            <img src="${app.image}" class="w-16 h-16 rounded-2xl object-cover bg-slate-100 dark:bg-slate-700" onerror="this.src='https://via.placeholder.com/150'">
-                            <span class="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-bold px-3 py-1 rounded-full h-fit">${app.price}</span>
-                        </div>
-                        <h3 class="font-bold text-lg text-slate-800 dark:text-white leading-tight mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">${app.title}</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mb-3 uppercase tracking-wide">${app.category}</p>
-                        <p class="text-slate-600 dark:text-slate-300 text-sm mb-4 flex-grow line-clamp-3">${app.desc}</p>
-                        <button onclick="window.open('${app.downloadUrl}', '_blank')" class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-medium py-2.5 rounded-xl hover:bg-blue-600 dark:hover:bg-blue-100 transition active:scale-[0.98]">
-                            Скачать
-                        </button>
+                grid.insertAdjacentHTML('beforeend', `
+                    <div class="relative bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full">
+                        ${isAdmin ? `<button onclick="deleteApp(${app.id})" class="absolute top-3 right-3 text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                        <img src="${app.image}" class="w-16 h-16 rounded-2xl mb-4 object-cover">
+                        <h3 class="font-bold text-lg dark:text-white">${app.title}</h3>
+                        <p class="text-xs text-slate-400 mb-2 uppercase">${app.category}</p>
+                        <p class="text-sm text-slate-600 dark:text-slate-300 flex-grow mb-4">${app.desc}</p>
+                        <button onclick="window.open('${app.downloadUrl}', '_blank')" class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-2 rounded-xl">Скачать</button>
                     </div>
-                `;
-                grid.insertAdjacentHTML('beforeend', card);
+                `);
             });
             lucide.createIcons();
         }
